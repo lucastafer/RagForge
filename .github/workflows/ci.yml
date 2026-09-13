@@ -1,0 +1,21 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: 10.0.x
+      - run: dotnet restore RagForge.sln
+      - run: dotnet build RagForge.sln --configuration Release --no-restore
+      - run: dotnet test RagForge.sln --configuration Release --no-build

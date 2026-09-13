@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+  <PropertyGroup>
+    <UserSecretsId>ragforge-api-development</UserSecretsId>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../RagForge.Application/RagForge.Application.csproj" />
+    <ProjectReference Include="../RagForge.Domain/RagForge.Domain.csproj" />
+    <ProjectReference Include="../RagForge.Infrastructure/RagForge.Infrastructure.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.OpenApi" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+  </ItemGroup>
+</Project>
