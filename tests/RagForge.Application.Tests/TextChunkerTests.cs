@@ -40,4 +40,25 @@ public sealed class TextChunkerTests
 
         Assert.Contains("Overlap", exception.Message, StringComparison.Ordinal);
     }
+
+    [Fact]
+    public void Split_RejectsOverlapAboveHalfOfChunkSize()
+    {
+        var chunker = new TextChunker(new ChunkingOptions { ChunkSize = 100, Overlap = 60 });
+
+        Assert.Throws<InvalidOperationException>(() => chunker.Split("Valid input text."));
+    }
+
+    [Fact]
+    public void Split_AlwaysAdvances_WhenSentenceBoundariesShortenChunks()
+    {
+        var sentence = new string('a', 66) + ".";
+        var text = string.Concat(Enumerable.Repeat(sentence, 30));
+        var chunker = new TextChunker(new ChunkingOptions { ChunkSize = 100, Overlap = 50 });
+
+        var chunks = chunker.Split(text);
+
+        Assert.InRange(chunks.Count, 2, text.Length);
+        Assert.EndsWith(".", chunks[^1].Content, StringComparison.Ordinal);
+    }
 }

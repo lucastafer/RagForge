@@ -1,3 +1,4 @@
+using System.Net;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
 using RagForge.Application.Exceptions;
@@ -20,8 +21,18 @@ public sealed class GlobalExceptionHandler(ILogger<GlobalExceptionHandler> logge
                 (StatusCodes.Status400BadRequest, "Invalid request", exception.Message),
             ArgumentException =>
                 (StatusCodes.Status400BadRequest, "Invalid request", exception.Message),
-            HttpRequestException =>
-                (StatusCodes.Status502BadGateway, "AI provider error", "The configured AI provider could not complete the request."),
+            AiProviderException { StatusCode: HttpStatusCode.Unauthorized or HttpStatusCode.Forbidden } provider =>
+                (StatusCodes.Status502BadGateway, "AI provider rejected the credentials", $"Check that {provider.SettingsSection}:ApiKey is valid and has API access."),
+            AiProviderException { StatusCode: HttpStatusCode.TooManyRequests or HttpStatusCode.PaymentRequired } provider =>
+                (StatusCodes.Status503ServiceUnavailable, "AI provider rate limit", $"The {provider.SettingsSection} provider rate limit or quota was exceeded. Check your API billing and try again later."),
+            AiProviderException { StatusCode: HttpStatusCode.NotFound or HttpStatusCode.BadRequest } provider =>
+                (StatusCodes.Status502BadGateway, "AI provider rejected the request", $"Check {provider.SettingsSection}:BaseUrl and that {provider.SettingsSection}:Model is available for this API key."),
+            AiProviderException { StatusCode: null } provider =>
+                (StatusCodes.Status502BadGateway, "AI provider error", provider.Message),
+            AiProviderException provider =>
+                (StatusCodes.Status502BadGateway, "AI provider error", $"The {provider.SettingsSection} provider could not complete the request."),
+            TaskCanceledException { InnerException: TimeoutException } =>
+                (StatusCodes.Status504GatewayTimeout, "AI provider timeout", "The AI provider did not respond within the configured TimeoutSeconds."),
             _ =>
                 (StatusCodes.Status500InternalServerError, "Unexpected error", "An unexpected error occurred.")
         };

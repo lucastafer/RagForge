@@ -91,7 +91,8 @@ public sealed class UseCaseTests
         var useCase = new AskQuestionUseCase(
             new FakeEmbeddingService(),
             vectorStore,
-            new FakeChatService());
+            new FakeChatService(),
+            new RetrievalOptions { MinSimilarity = 0.2 });
 
         var response = await useCase.ExecuteAsync(new AskQuestionRequestDto
         {
@@ -100,9 +101,70 @@ public sealed class UseCaseTests
         });
 
         Assert.Equal("A grounded test answer [Source 1].", response.Answer);
+        Assert.Equal("test-model", response.ChatModel);
         var source = Assert.Single(response.Sources);
         Assert.Equal("rag.md", source.DocumentName);
         Assert.Equal(0.92, source.Similarity);
+    }
+
+    [Fact]
+    public async Task IngestDocument_ReturnsExistingDocument_WhenContentWasAlreadyIndexed()
+    {
+        var existingId = Guid.NewGuid();
+        var embeddingService = new FakeEmbeddingService();
+        var vectorStore = new FakeVectorStore
+        {
+            ExistingDocument = new IndexedDocument(existingId, "rag.md", "text/markdown", 3, DateTimeOffset.UtcNow)
+        };
+        var useCase = new IngestDocumentUseCase(
+            new TextChunker(new ChunkingOptions { ChunkSize = 100, Overlap = 20 }),
+            embeddingService,
+            vectorStore,
+            new DocumentUploadOptions { MaxBytes = 1024 });
+        var content = Encoding.UTF8.GetBytes("Retrieval content that was uploaded before.");
+
+        var response = await useCase.ExecuteAsync(new IngestDocumentRequestDto
+        {
+            Name = "copy-of-rag.md",
+            ContentType = "text/markdown",
+            Length = content.Length,
+            ContentStream = new MemoryStream(content)
+        });
+
+        Assert.True(response.AlreadyIndexed);
+        Assert.Equal(existingId, response.DocumentId);
+        Assert.Equal(3, response.ChunkCount);
+        Assert.Equal(0, embeddingService.InputCount);
+        Assert.Empty(vectorStore.StoredChunks);
+    }
+
+    [Fact]
+    public async Task AskQuestion_SkipsChatModel_WhenNoChunkReachesMinimumSimilarity()
+    {
+        var chatService = new FakeChatService();
+        var vectorStore = new FakeVectorStore
+        {
+            SearchResults =
+            [
+                new RetrievedChunk(Guid.NewGuid(), Guid.NewGuid(), "rag.md", 0, "Unrelated content.", 0.05)
+            ]
+        };
+        var useCase = new AskQuestionUseCase(
+            new FakeEmbeddingService(),
+            vectorStore,
+            chatService,
+            new RetrievalOptions { MinSimilarity = 0.2 });
+
+        var response = await useCase.ExecuteAsync(new AskQuestionRequestDto
+        {
+            Question = "What is the weather today?",
+            TopK = 3
+        });
+
+        Assert.Contains("could not find", response.Answer, StringComparison.Ordinal);
+        Assert.Empty(response.Sources);
+        Assert.False(chatService.WasCalled);
+        Assert.Null(response.ChatModel);
     }
 
     private static IngestDocumentUseCase CreateIngestDocumentUseCase(long maxBytes) =>
@@ -128,11 +190,18 @@ public sealed class UseCaseTests
 
     private sealed class FakeChatService : IChatService
     {
+        public string ModelName => "test-model";
+
+        public bool WasCalled { get; private set; }
+
         public Task<string> GenerateGroundedAnswerAsync(
             string question,
             IReadOnlyList<RetrievedChunk> context,
-            CancellationToken cancellationToken = default) =>
-            Task.FromResult("A grounded test answer [Source 1].");
+            CancellationToken cancellationToken = default)
+        {
+            WasCalled = true;
+            return Task.FromResult("A grounded test answer [Source 1].");
+        }
     }
 
     private sealed class FakeVectorStore : IVectorStore
@@ -140,6 +209,8 @@ public sealed class UseCaseTests
         public IReadOnlyList<EmbeddedChunk> StoredChunks { get; private set; } = [];
 
         public IReadOnlyList<RetrievedChunk> SearchResults { get; init; } = [];
+
+        public IndexedDocument? ExistingDocument { get; init; }
 
         public Task StoreDocumentAsync(
             Document document,
@@ -149,6 +220,15 @@ public sealed class UseCaseTests
             StoredChunks = chunks;
             return Task.CompletedTask;
         }
+
+        public Task<IndexedDocument?> FindByContentHashAsync(
+            string contentHash,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult(ExistingDocument);
+
+        public Task<IReadOnlyList<IndexedDocument>> ListDocumentsAsync(
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<IReadOnlyList<IndexedDocument>>(ExistingDocument is null ? [] : [ExistingDocument]);
 
         public Task<IReadOnlyList<RetrievedChunk>> SearchAsync(
             float[] embedding,

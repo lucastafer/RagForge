@@ -1,3 +1,5 @@
+using System.Security.Cryptography;
+using System.Text;
 using RagForge.Application.DTOs.Documents;
 using RagForge.Application.Exceptions;
 using RagForge.Application.Interfaces;
@@ -38,8 +40,21 @@ public sealed class IngestDocumentUseCase(
             throw new DocumentValidationException("The uploaded file contains no text.");
         }
 
+        var contentHash = Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(content)));
+        var existing = await vectorStore.FindByContentHashAsync(contentHash, cancellationToken);
+        if (existing is not null)
+        {
+            return new IngestDocumentResponseDto
+            {
+                DocumentId = existing.Id,
+                Name = existing.Name,
+                ChunkCount = existing.ChunkCount,
+                AlreadyIndexed = true
+            };
+        }
+
         var segments = chunker.Split(content);
-        var document = new Document(fileName, request.ContentType);
+        var document = new Document(fileName, request.ContentType, contentHash);
         var documentChunks = segments
             .Select(segment => document.AddChunk(segment.Index, segment.Content))
             .ToArray();

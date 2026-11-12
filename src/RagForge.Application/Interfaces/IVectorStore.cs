@@ -10,6 +10,13 @@ public interface IVectorStore
         IReadOnlyList<EmbeddedChunk> chunks,
         CancellationToken cancellationToken = default);
 
+    Task<IndexedDocument?> FindByContentHashAsync(
+        string contentHash,
+        CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyList<IndexedDocument>> ListDocumentsAsync(
+        CancellationToken cancellationToken = default);
+
     Task<IReadOnlyList<RetrievedChunk>> SearchAsync(
         float[] embedding,
         int limit,

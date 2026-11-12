@@ -20,6 +20,7 @@ internal sealed class PgVectorStore(RagForgeDbContext dbContext) : IVectorStore
             Id = sourceDocument.Id,
             Name = sourceDocument.Name,
             ContentType = sourceDocument.ContentType,
+            ContentHash = sourceDocument.ContentHash,
             CreatedAt = sourceDocument.CreatedAt,
             Chunks = chunks.Select(chunk => new DocumentChunkEntity
             {
@@ -33,6 +34,17 @@ internal sealed class PgVectorStore(RagForgeDbContext dbContext) : IVectorStore
         dbContext.Documents.Add(document);
         await dbContext.SaveChangesAsync(cancellationToken);
     }
+
+    public async Task<IndexedDocument?> FindByContentHashAsync(
+        string contentHash,
+        CancellationToken cancellationToken = default) =>
+        await SelectIndexedDocuments(dbContext.Documents.Where(document => document.ContentHash == contentHash))
+            .FirstOrDefaultAsync(cancellationToken);
+
+    public async Task<IReadOnlyList<IndexedDocument>> ListDocumentsAsync(
+        CancellationToken cancellationToken = default) =>
+        await SelectIndexedDocuments(dbContext.Documents.OrderByDescending(document => document.CreatedAt))
+            .ToListAsync(cancellationToken);
 
     public async Task<IReadOnlyList<RetrievedChunk>> SearchAsync(
         float[] embedding,
@@ -65,4 +77,14 @@ internal sealed class PgVectorStore(RagForgeDbContext dbContext) : IVectorStore
                 Math.Clamp(1d - match.Distance, -1d, 1d)))
             .ToArray();
     }
+
+    private static IQueryable<IndexedDocument> SelectIndexedDocuments(IQueryable<DocumentEntity> documents) =>
+        documents
+            .AsNoTracking()
+            .Select(document => new IndexedDocument(
+                document.Id,
+                document.Name,
+                document.ContentType,
+                document.Chunks.Count,
+                document.CreatedAt));
 }

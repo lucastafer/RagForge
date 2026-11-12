@@ -17,5 +17,25 @@ services:
       retries: 10
     restart: unless-stopped
 
+  api:
+    build: .
+    container_name: ragforge-api
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      ConnectionStrings__DefaultConnection: "Host=postgres;Port=5432;Database=${POSTGRES_DB};Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD}"
+      Embedding__BaseUrl: ${Embedding__BaseUrl:-https://api.openai.com/v1/}
+      Embedding__ApiKey: ${Embedding__ApiKey:-}
+      Embedding__Model: ${Embedding__Model:-text-embedding-3-small}
+      Chat__Provider: ${Chat__Provider:-OpenAI}
+      Chat__ApiKey: ${Chat__ApiKey:-}
+      Chat__Model: ${Chat__Model:-}
+      Chat__BaseUrl: ${Chat__BaseUrl:-}
+      Chat__Temperature: ${Chat__Temperature:-}
+    ports:
+      - "${API_PORT:-5190}:8080"
+    restart: unless-stopped
+
 volumes:
   ragforge-postgres-data:

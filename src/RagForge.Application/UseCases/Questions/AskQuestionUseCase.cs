@@ -1,5 +1,6 @@
 using RagForge.Application.DTOs.Questions;
 using RagForge.Application.Interfaces;
+using RagForge.Application.Options;
 using RagForge.Application.UseCases.Questions.Interfaces;
 
 namespace RagForge.Application.UseCases.Questions;
@@ -7,7 +8,8 @@ namespace RagForge.Application.UseCases.Questions;
 public sealed class AskQuestionUseCase(
     IEmbeddingService embeddingService,
     IVectorStore vectorStore,
-    IChatService chatService) : IAskQuestionUseCase
+    IChatService chatService,
+    RetrievalOptions retrievalOptions) : IAskQuestionUseCase
 {
     public async Task<AskQuestionResponseDto> ExecuteAsync(
         AskQuestionRequestDto request,
@@ -21,15 +23,21 @@ public sealed class AskQuestionUseCase(
         }
 
         var vectors = await embeddingService.GenerateAsync([request.Question.Trim()], cancellationToken);
-        var context = await vectorStore.SearchAsync(vectors[0], request.TopK, cancellationToken);
+        var matches = await vectorStore.SearchAsync(vectors[0], request.TopK, cancellationToken);
 
-        var answer = context.Count == 0
+        // Weak matches are dropped so unrelated questions do not reach the chat model at all.
+        var context = matches
+            .Where(chunk => chunk.Similarity >= retrievalOptions.MinSimilarity)
+            .ToArray();
+
+        var answer = context.Length == 0
             ? "I could not find relevant information in the indexed documents."
             : await chatService.GenerateGroundedAnswerAsync(request.Question.Trim(), context, cancellationToken);
 
         return new AskQuestionResponseDto
         {
             Answer = answer,
+            ChatModel = context.Length == 0 ? null : chatService.ModelName,
             Sources = context.Select(chunk => new SourceChunkDto
             {
                 ChunkId = chunk.ChunkId,

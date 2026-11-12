@@ -7,4 +7,6 @@ public sealed class IngestDocumentResponseDto
     public string Name { get; set; } = string.Empty;
 
     public int ChunkCount { get; set; }
+
+    public bool AlreadyIndexed { get; set; }
 }

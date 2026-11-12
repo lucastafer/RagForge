@@ -19,6 +19,8 @@ public sealed class RagForgeDbContext(DbContextOptions<RagForgeDbContext> option
             entity.HasKey(document => document.Id);
             entity.Property(document => document.Name).HasMaxLength(255).IsRequired();
             entity.Property(document => document.ContentType).HasMaxLength(100).IsRequired();
+            entity.Property(document => document.ContentHash).HasMaxLength(64).IsRequired();
+            entity.HasIndex(document => document.ContentHash).IsUnique();
             entity.Property(document => document.CreatedAt).IsRequired();
             entity.HasMany(document => document.Chunks)
                 .WithOne(chunk => chunk.Document)

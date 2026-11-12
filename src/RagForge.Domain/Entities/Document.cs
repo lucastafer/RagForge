@@ -6,10 +6,11 @@ public sealed class Document
 {
     private readonly List<DocumentChunk> _chunks = [];
 
-    public Document(string name, string contentType)
+    public Document(string name, string contentType, string contentHash)
     {
         Name = NormalizeRequired(name, nameof(name));
         ContentType = NormalizeRequired(contentType, nameof(contentType));
+        ContentHash = NormalizeRequired(contentHash, nameof(contentHash));
         Id = Guid.NewGuid();
         CreatedAt = DateTimeOffset.UtcNow;
     }
@@ -19,6 +20,8 @@ public sealed class Document
     public string Name { get; }
 
     public string ContentType { get; }
+
+    public string ContentHash { get; }
 
     public DateTimeOffset CreatedAt { get; }
 

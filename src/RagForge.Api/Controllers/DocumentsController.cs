@@ -6,11 +6,19 @@ namespace RagForge.Api.Controllers;
 
 [ApiController]
 [Route("api/documents")]
-public sealed class DocumentsController(IIngestDocumentUseCase ingestDocumentUseCase) : ControllerBase
+public sealed class DocumentsController(
+    IIngestDocumentUseCase ingestDocumentUseCase,
+    IListDocumentsUseCase listDocumentsUseCase) : ControllerBase
 {
+    [HttpGet]
+    [ProducesResponseType<IReadOnlyList<DocumentSummaryDto>>(StatusCodes.Status200OK)]
+    public async Task<ActionResult<IReadOnlyList<DocumentSummaryDto>>> List(CancellationToken cancellationToken) =>
+        Ok(await listDocumentsUseCase.ExecuteAsync(cancellationToken));
+
     [HttpPost]
     [Consumes("multipart/form-data")]
     [ProducesResponseType<IngestDocumentResponseDto>(StatusCodes.Status201Created)]
+    [ProducesResponseType<IngestDocumentResponseDto>(StatusCodes.Status200OK)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest)]
     public async Task<ActionResult<IngestDocumentResponseDto>> Ingest(
         IFormFile file,
@@ -27,6 +35,6 @@ public sealed class DocumentsController(IIngestDocumentUseCase ingestDocumentUse
             },
             cancellationToken);
 
-        return StatusCode(StatusCodes.Status201Created, result);
+        return result.AlreadyIndexed ? Ok(result) : StatusCode(StatusCodes.Status201Created, result);
     }
 }

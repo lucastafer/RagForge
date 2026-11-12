@@ -1,0 +1,425 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>RagForge</title>
+  <style>
+    :root {
+      --bg: #f6f7f9;
+      --surface: #ffffff;
+      --border: #e2e5ea;
+      --text: #1b1f24;
+      --muted: #5f6b7a;
+      --accent: #4f46e5;
+      --accent-soft: #eef0ff;
+      --ok: #15803d;
+      --warn: #b45309;
+      --danger: #b91c1c;
+      --mark: #fff3bf;
+      color-scheme: light;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #0f1216;
+        --surface: #171b21;
+        --border: #2a3039;
+        --text: #e6e9ee;
+        --muted: #98a2b3;
+        --accent: #8b85ff;
+        --accent-soft: #23234a;
+        --ok: #4ade80;
+        --warn: #fbbf24;
+        --danger: #f87171;
+        --mark: #4a3f12;
+        color-scheme: dark;
+      }
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font: 15px/1.55 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    }
+    header {
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: 28px 16px 8px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      align-items: baseline;
+      justify-content: space-between;
+    }
+    h1 { margin: 0; font-size: 24px; letter-spacing: -0.01em; }
+    h1 span { color: var(--accent); }
+    header p { margin: 4px 0 0; color: var(--muted); }
+    header nav { display: flex; gap: 16px; }
+    header nav a { color: var(--accent); text-decoration: none; font-weight: 500; }
+    main {
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: 16px;
+      display: grid;
+      grid-template-columns: minmax(0, 340px) minmax(0, 1fr);
+      gap: 16px;
+      align-items: start;
+    }
+    @media (max-width: 860px) { main { grid-template-columns: minmax(0, 1fr); } }
+    section.card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 18px;
+    }
+    h2 {
+      margin: 0 0 12px;
+      font-size: 13px;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--muted);
+    }
+    .step { color: var(--accent); margin-right: 6px; }
+    .dropzone {
+      display: block;
+      border: 1.5px dashed var(--border);
+      border-radius: 10px;
+      padding: 20px 12px;
+      text-align: center;
+      color: var(--muted);
+      cursor: pointer;
+      transition: border-color .15s, background .15s;
+    }
+    .dropzone.over, .dropzone:hover { border-color: var(--accent); background: var(--accent-soft); }
+    .dropzone strong { color: var(--text); }
+    .hint { font-size: 13px; color: var(--muted); margin: 10px 0 0; }
+    code { font-size: 12.5px; background: var(--accent-soft); padding: 1px 5px; border-radius: 4px; }
+    ul.list { list-style: none; margin: 14px 0 0; padding: 0; }
+    ul.list li {
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      padding: 8px 0;
+      border-top: 1px solid var(--border);
+      font-size: 14px;
+    }
+    ul.list li span:first-child { overflow-wrap: anywhere; }
+    .badge {
+      white-space: nowrap;
+      font-size: 12px;
+      color: var(--muted);
+    }
+    .log { font-size: 13px; margin-top: 10px; }
+    .log div { padding: 2px 0; }
+    .ok { color: var(--ok); }
+    .warn { color: var(--warn); }
+    .err { color: var(--danger); }
+    form { display: flex; flex-direction: column; gap: 10px; }
+    textarea {
+      width: 100%;
+      min-height: 84px;
+      resize: vertical;
+      padding: 10px 12px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: var(--bg);
+      color: var(--text);
+      font: inherit;
+    }
+    textarea:focus, select:focus, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+    .row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between; }
+    label { font-size: 14px; color: var(--muted); }
+    select {
+      padding: 6px 8px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--text);
+      font: inherit;
+    }
+    button.primary {
+      background: var(--accent);
+      color: #fff;
+      border: 0;
+      border-radius: 8px;
+      padding: 9px 18px;
+      font: inherit;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    button.primary:disabled { opacity: .6; cursor: progress; }
+    .chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+    .chips button {
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--text);
+      border-radius: 999px;
+      padding: 5px 12px;
+      font: inherit;
+      font-size: 13px;
+      cursor: pointer;
+    }
+    .chips button:hover { border-color: var(--accent); color: var(--accent); }
+    .answer {
+      margin-top: 16px;
+      padding: 16px;
+      border-radius: 10px;
+      background: var(--accent-soft);
+      white-space: pre-wrap;
+    }
+    .answer.err { background: transparent; border: 1px solid var(--danger); }
+    .meta { font-size: 13px; color: var(--muted); margin-top: 8px; }
+    a.cite {
+      color: var(--accent);
+      font-weight: 600;
+      text-decoration: none;
+      border-bottom: 1px dotted var(--accent);
+    }
+    .sources { display: grid; gap: 10px; margin-top: 16px; }
+    .source {
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 12px 14px;
+      scroll-margin-top: 16px;
+    }
+    .source:target, .source.flash { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-soft); }
+    .source header {
+      all: unset;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px 14px;
+      align-items: center;
+      font-size: 14px;
+    }
+    .source header b { color: var(--accent); }
+    .bar {
+      flex: 0 0 90px;
+      height: 6px;
+      border-radius: 3px;
+      background: var(--border);
+      overflow: hidden;
+    }
+    .bar i { display: block; height: 100%; background: var(--accent); }
+    .source p {
+      margin: 8px 0 0;
+      font-size: 13.5px;
+      color: var(--muted);
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+      max-height: 9.5em;
+      overflow: hidden;
+    }
+    .source.open p { max-height: none; }
+    .source button {
+      border: 0;
+      background: none;
+      color: var(--accent);
+      font: inherit;
+      font-size: 13px;
+      padding: 4px 0 0;
+      cursor: pointer;
+    }
+    .pipeline { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; font-size: 12.5px; color: var(--muted); }
+    .pipeline span { background: var(--bg); border: 1px solid var(--border); border-radius: 6px; padding: 2px 8px; }
+  </style>
+</head>
+<body>
+  <header>
+    <div>
+      <h1>Rag<span>Forge</span></h1>
+      <p>Upload documents, ask questions, and see exactly which chunks grounded the answer.</p>
+    </div>
+    <nav>
+      <a href="/scalar">API reference</a>
+      <a href="https://github.com/lucastafer/RagForge" rel="noopener">GitHub</a>
+    </nav>
+  </header>
+
+  <main>
+    <div>
+      <section class="card">
+        <h2><span class="step">1</span>Index documents</h2>
+        <label class="dropzone" id="dropzone">
+          <input type="file" id="file" accept=".md,.markdown,.txt" multiple hidden>
+          <strong>Drop files here</strong> or click to choose<br>
+          <span class="hint">.md, .markdown or .txt</span>
+        </label>
+        <p class="hint">Try the files in the repository's <code>samples/</code> folder.</p>
+        <div class="log" id="upload-log" aria-live="polite"></div>
+        <ul class="list" id="documents"></ul>
+      </section>
+    </div>
+
+    <section class="card">
+      <h2><span class="step">2</span>Ask a question</h2>
+      <form id="ask">
+        <textarea id="question" placeholder="e.g. How many vacation days can be carried over?" required minlength="2" maxlength="2000"></textarea>
+        <div class="row">
+          <label>Chunks to retrieve
+            <select id="topk">
+              <option>3</option>
+              <option selected>5</option>
+              <option>8</option>
+            </select>
+          </label>
+          <button class="primary" type="submit" id="ask-button">Ask</button>
+        </div>
+      </form>
+      <div class="chips" id="suggestions"></div>
+      <div id="result" aria-live="polite"></div>
+    </section>
+  </main>
+
+  <script>
+    const suggestions = [
+      "How many vacation days can I carry over to next year?",
+      "Quanto custa o plano Pro por ano?",
+      "Who gets paged if the primary on-call does not answer?",
+      "What are the main stages of the RAG pipeline?",
+      "Qual é a previsão do tempo para amanhã?"
+    ];
+
+    const $ = id => document.getElementById(id);
+
+    const escapeHtml = value => String(value).replace(/[&<>"']/g, c => ({
+      "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+    })[c]);
+
+    async function request(url, options) {
+      const response = await fetch(url, options);
+      const body = await response.json().catch(() => null);
+      if (!response.ok) {
+        const detail = body?.errors ? Object.values(body.errors).flat().join(" ") : body?.detail;
+        throw new Error([body?.title, detail].filter(Boolean).join(": ") || `HTTP ${response.status}`);
+      }
+      return body;
+    }
+
+    async function loadDocuments() {
+      const list = $("documents");
+      try {
+        const documents = await request("/api/documents");
+        list.innerHTML = documents.length
+          ? documents.map(d => `<li><span>${escapeHtml(d.name)}</span><span class="badge">${d.chunkCount} chunks</span></li>`).join("")
+          : `<li><span class="hint">No documents indexed yet.</span></li>`;
+      } catch (error) {
+        list.innerHTML = `<li><span class="err">${escapeHtml(error.message)}</span></li>`;
+      }
+    }
+
+    async function upload(files) {
+      const log = $("upload-log");
+      for (const file of files) {
+        const line = document.createElement("div");
+        line.textContent = `Indexing ${file.name}…`;
+        log.prepend(line);
+        const form = new FormData();
+        form.append("file", file);
+        try {
+          const result = await request("/api/documents", { method: "POST", body: form });
+          line.className = result.alreadyIndexed ? "warn" : "ok";
+          line.textContent = result.alreadyIndexed
+            ? `${file.name}: already indexed (${result.chunkCount} chunks), skipped`
+            : `${file.name}: ${result.chunkCount} chunks embedded and stored`;
+        } catch (error) {
+          line.className = "err";
+          line.textContent = `${file.name}: ${error.message}`;
+        }
+      }
+      loadDocuments();
+    }
+
+    function renderAnswer(answer) {
+      return escapeHtml(answer).replace(/\[([^\]]*Source[^\]]*)\]/g, (_, inner) =>
+        "[" + inner.replace(/Source (\d+)/g, (m, n) => `<a class="cite" href="#source-${n}" data-source="${n}">${m}</a>`) + "]");
+    }
+
+    function renderSources(sources) {
+      return sources.map((s, i) => {
+        const pct = Math.max(0, Math.round(s.similarity * 100));
+        return `<article class="source" id="source-${i + 1}">
+          <header>
+            <b>Source ${i + 1}</b>
+            <span>${escapeHtml(s.documentName)} · chunk ${s.chunkIndex}</span>
+            <span class="bar" title="cosine similarity"><i style="width:${pct}%"></i></span>
+            <span class="badge">similarity ${s.similarity.toFixed(3)}</span>
+          </header>
+          <p>${escapeHtml(s.content)}</p>
+          <button type="button" data-toggle>Show full chunk</button>
+        </article>`;
+      }).join("");
+    }
+
+    async function ask(event) {
+      event.preventDefault();
+      const question = $("question").value.trim();
+      if (question.length < 2) return;
+      const button = $("ask-button");
+      const result = $("result");
+      button.disabled = true;
+      button.textContent = "Thinking…";
+      result.innerHTML = `<div class="pipeline"><span>embed question</span><span>pgvector search</span><span>grounded chat</span></div>`;
+      const started = performance.now();
+      try {
+        const data = await request("/api/questions", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ question, topK: Number($("topk").value) })
+        });
+        const seconds = ((performance.now() - started) / 1000).toFixed(1);
+        result.innerHTML = `
+          <div class="answer">${renderAnswer(data.answer)}</div>
+          <div class="meta">${data.chatModel ? `answered by ${escapeHtml(data.chatModel)} · ` : ""}${data.sources.length} source chunk(s) above the similarity threshold · ${seconds}s</div>
+          <div class="sources">${renderSources(data.sources)}</div>`;
+      } catch (error) {
+        result.innerHTML = `<div class="answer err">${escapeHtml(error.message)}</div>`;
+      } finally {
+        button.disabled = false;
+        button.textContent = "Ask";
+      }
+    }
+
+    $("result").addEventListener("click", event => {
+      const toggle = event.target.closest("[data-toggle]");
+      if (toggle) {
+        const card = toggle.closest(".source");
+        card.classList.toggle("open");
+        toggle.textContent = card.classList.contains("open") ? "Collapse" : "Show full chunk";
+        return;
+      }
+      const cite = event.target.closest("a.cite");
+      if (cite) {
+        event.preventDefault();
+        const card = $(`source-${cite.dataset.source}`);
+        if (!card) return;
+        card.scrollIntoView({ behavior: "smooth", block: "nearest" });
+        card.classList.add("flash");
+        setTimeout(() => card.classList.remove("flash"), 1200);
+      }
+    });
+
+    const dropzone = $("dropzone");
+    $("file").addEventListener("change", event => { upload([...event.target.files]); event.target.value = ""; });
+    ["dragenter", "dragover"].forEach(type => dropzone.addEventListener(type, event => {
+      event.preventDefault();
+      dropzone.classList.add("over");
+    }));
+    ["dragleave", "drop"].forEach(type => dropzone.addEventListener(type, () => dropzone.classList.remove("over")));
+    dropzone.addEventListener("drop", event => { event.preventDefault(); upload([...event.dataTransfer.files]); });
+
+    $("suggestions").innerHTML = suggestions.map(q => `<button type="button">${escapeHtml(q)}</button>`).join("");
+    $("suggestions").addEventListener("click", event => {
+      if (event.target.tagName !== "BUTTON") return;
+      $("question").value = event.target.textContent;
+      $("ask").requestSubmit();
+    });
+    $("ask").addEventListener("submit", ask);
+    $("question").addEventListener("keydown", event => {
+      if (event.key === "Enter" && (event.ctrlKey || event.metaKey)) $("ask").requestSubmit();
+    });
+
+    loadDocuments();
+  </script>
+</body>
+</html>

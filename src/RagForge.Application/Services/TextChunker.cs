@@ -14,9 +14,9 @@ public sealed class TextChunker(ChunkingOptions options)
             throw new InvalidOperationException("ChunkSize must be at least 100 characters.");
         }
 
-        if (options.Overlap < 0 || options.Overlap >= options.ChunkSize)
+        if (options.Overlap < 0 || options.Overlap > options.ChunkSize / 2)
         {
-            throw new InvalidOperationException("Overlap must be non-negative and smaller than ChunkSize.");
+            throw new InvalidOperationException("Overlap must be between 0 and half of ChunkSize.");
         }
 
         var normalized = text.Replace("\r\n", "\n", StringComparison.Ordinal).Trim();
@@ -46,7 +46,9 @@ public sealed class TextChunker(ChunkingOptions options)
             }
 
             var nextStart = Math.Max(0, end - options.Overlap);
-            start = MoveToWordBoundary(normalized, nextStart, end);
+
+            // A natural boundary can shorten a chunk, so always move forward to avoid repeating the same window.
+            start = Math.Max(MoveToWordBoundary(normalized, nextStart, end), start + 1);
         }
 
         return chunks;

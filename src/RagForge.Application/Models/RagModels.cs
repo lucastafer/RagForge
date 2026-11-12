@@ -11,3 +11,10 @@ public sealed record RetrievedChunk(
     int ChunkIndex,
     string Content,
     double Similarity);
+
+public sealed record IndexedDocument(
+    Guid Id,
+    string Name,
+    string ContentType,
+    int ChunkCount,
+    DateTimeOffset CreatedAt);

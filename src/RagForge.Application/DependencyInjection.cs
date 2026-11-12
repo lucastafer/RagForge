@@ -18,7 +18,12 @@ public static class DependencyInjection
         services.AddOptions<ChunkingOptions>()
             .Bind(configuration.GetSection(ChunkingOptions.SectionName))
             .Validate(options => options.ChunkSize >= 100, "Rag:Chunking:ChunkSize must be at least 100.")
-            .Validate(options => options.Overlap >= 0 && options.Overlap < options.ChunkSize, "Rag:Chunking:Overlap must be smaller than ChunkSize.")
+            .Validate(options => options.Overlap >= 0 && options.Overlap <= options.ChunkSize / 2, "Rag:Chunking:Overlap must be between 0 and half of ChunkSize.")
+            .ValidateOnStart();
+
+        services.AddOptions<RetrievalOptions>()
+            .Bind(configuration.GetSection(RetrievalOptions.SectionName))
+            .Validate(options => options.MinSimilarity is >= -1 and <= 1, "Rag:Retrieval:MinSimilarity must be between -1 and 1.")
             .ValidateOnStart();
 
         services.AddOptions<DocumentUploadOptions>()
@@ -30,8 +35,11 @@ public static class DependencyInjection
             serviceProvider.GetRequiredService<Microsoft.Extensions.Options.IOptions<ChunkingOptions>>().Value);
         services.AddSingleton(serviceProvider =>
             serviceProvider.GetRequiredService<Microsoft.Extensions.Options.IOptions<DocumentUploadOptions>>().Value);
+        services.AddSingleton(serviceProvider =>
+            serviceProvider.GetRequiredService<Microsoft.Extensions.Options.IOptions<RetrievalOptions>>().Value);
         services.AddScoped<TextChunker>();
         services.AddScoped<IIngestDocumentUseCase, IngestDocumentUseCase>();
+        services.AddScoped<IListDocumentsUseCase, ListDocumentsUseCase>();
         services.AddScoped<IAskQuestionUseCase, AskQuestionUseCase>();
 
         return services;

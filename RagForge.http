@@ -5,14 +5,31 @@ Accept: application/json
 
 ###
 
+GET {{RagForge_HostAddress}}/api/documents
+Accept: application/json
+
+###
+
 POST {{RagForge_HostAddress}}/api/documents
 Content-Type: multipart/form-data; boundary=RagForgeBoundary
 
 --RagForgeBoundary
-Content-Disposition: form-data; name="file"; filename="rag-overview.md"
+Content-Disposition: form-data; name="file"; filename="orbitly-employee-handbook.md"
 Content-Type: text/markdown
 
-< ./samples/rag-overview.md
+< ./samples/orbitly-employee-handbook.md
+--RagForgeBoundary--
+
+###
+
+POST {{RagForge_HostAddress}}/api/documents
+Content-Type: multipart/form-data; boundary=RagForgeBoundary
+
+--RagForgeBoundary
+Content-Disposition: form-data; name="file"; filename="orbitly-product-faq.md"
+Content-Type: text/markdown
+
+< ./samples/orbitly-product-faq.md
 --RagForgeBoundary--
 
 ###
@@ -21,6 +38,16 @@ POST {{RagForge_HostAddress}}/api/questions
 Content-Type: application/json
 
 {
-  "question": "What are the main stages of the RAG pipeline?",
+  "question": "How many vacation days can I carry over to next year?",
+  "topK": 5
+}
+
+###
+
+POST {{RagForge_HostAddress}}/api/questions
+Content-Type: application/json
+
+{
+  "question": "Quanto custa o plano Pro por ano?",
   "topK": 5
 }

@@ -8,6 +8,8 @@ internal sealed class DocumentEntity
 
     public required string ContentType { get; set; }
 
+    public required string ContentHash { get; set; }
+
     public DateTimeOffset CreatedAt { get; set; }
 
     public List<DocumentChunkEntity> Chunks { get; set; } = [];
